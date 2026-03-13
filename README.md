@@ -79,6 +79,9 @@ A Bayesian regression model that predicts game price while  providing posterior 
 - **Implementation:** Package-based
 
 ## Repository Structure 
+- poc_data_processing.ipynb -- preprocessing methods
+- steam_clean.csv -- cleaned dataset (40k rows) with specific features we need
+- poc_train.ipynb -- training methods for POC demonstration
 
 
 
