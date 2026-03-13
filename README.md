@@ -68,15 +68,11 @@ In predicting prices, we will be using MLP NN and Bayesian Linear Regression.
 ### Model 1: MLP NN
 A feedforward neural network implemented manually using NumPy. 
 The model takes game metadata as input and outputs a predicted price. 
-No pre-built modeling packages (e.g. scikit-learn) are used — all forward pass, backpropagation, and gradient descent logic is implemented from scratch.
-- **Language:** Python
-- **Libraries:** NumPy, Pandas
 
 ### Model 2: Bayesian Linear Regression
-A Bayesian regression model that predicts game price while  providing posterior uncertainty estimates on coefficients. This allows for probabilistic interpretation of how each  game feature influences price, rather than a single point estimate.
-- **Language:** R
-- **Libraries:** brms / rstan
-- **Implementation:** Package-based
+A Bayesian regression model that predicts game price while  providing posterior uncertainty estimates on coefficients. 
+This allows us to see a probabilistic interpretation of how each  game feature influences price, rather than a single point estimate.
+
 
 ## Repository Structure 
 - poc_data_processing.ipynb -- preprocessing methods
