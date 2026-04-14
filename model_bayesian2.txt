@@ -1,0 +1,228 @@
+---
+output:
+  pdf_document: default
+  word_document: default
+---
+
+### Jason Zheng
+### DS 4420
+
+```{r}
+1+1
+```
+
+```{r}
+library(ggplot2)
+steam_df <- read.csv("steam_clean.csv")
+
+# this uses base r + matrix algebra instead of
+# specialized bayesian libraries like stan or brms
+# posterior is computed analytically (closed form)
+
+# -------- Feature Engineering --------
+# log-transform skewed features (only if they exist)
+log_cols <- c("peak_ccu", "recommendations", "positive", "negative")
+for (col in log_cols) {
+  if (col %in% names(steam_df)) {
+    steam_df[[col]] <- log(steam_df[[col]] + 1)
+  }
+}
+
+# -------- Log-transform target --------
+# converts multiplicative relationships into linear ones
+y <- log(steam_df$Price + 1)
+
+# design matrix
+# builds X manually for linear regression formulation
+x_df <- steam_df[, setdiff(names(steam_df), "Price")]
+X <- as.matrix(cbind(Intercept = 1, x_df))
+
+n <- nrow(X)
+p <- ncol(X)
+
+# -------- Prior --------
+# gaussian prior on coefficients
+# inverse-gamma prior on variance
+beta0 <- rep(0, p)
+B0 <- diag(10, p)
+B0_inv <- solve(B0)
+a0 <- 2
+b0 <- 2
+
+# -------- Posterior --------
+# closed-form bayesian update using conjugacy
+# no sampling or mcmc required
+Bn_inv <- B0_inv + t(X) %*% X
+Bn <- solve(Bn_inv)
+beta_n <- Bn %*% (B0_inv %*% beta0 + t(X) %*% y)
+
+a_n <- a0 + n / 2
+quad_y <- as.numeric(t(y) %*% y)
+quad_prior <- as.numeric(t(beta0) %*% B0_inv %*% beta0)
+quad_post <- as.numeric(t(beta_n) %*% Bn_inv %*% beta_n)
+b_n <- b0 + 0.5 * (quad_y + quad_prior - quad_post)
+
+# -------- Coefficient Summary --------
+# computes posterior mean and uncertainty
+sigma2_post_mean <- b_n / (a_n - 1)
+beta_sd <- sqrt(diag(sigma2_post_mean * Bn))
+
+coef_summary <- data.frame(
+  feature = colnames(X),
+  posterior_mean = as.numeric(beta_n),
+  lower_95 = as.numeric(beta_n) - 1.96 * beta_sd,
+  upper_95 = as.numeric(beta_n) + 1.96 * beta_sd
+)
+
+coef_summary$abs_effect <- abs(coef_summary$posterior_mean)
+coef_summary <- coef_summary[order(-coef_summary$abs_effect), ]
+
+print(head(coef_summary[, c("feature", "posterior_mean", "lower_95", "upper_95")], 20))
+
+# -------- Predictions (log space) --------
+# linear predictions in transformed space
+pred_log <- as.numeric(X %*% beta_n)
+
+# convert back to price scale
+# ensures predictions are positive
+pred_mean <- exp(pred_log) - 1
+
+# approximate variance propagation
+# uncertainty carried through exponential transform
+pred_var_log <- as.numeric((b_n / a_n) * (1 + rowSums((X %*% Bn) * X)))
+pred_sd_log <- sqrt(pred_var_log)
+
+pred_lower <- exp(pred_log - 1.96 * pred_sd_log) - 1
+pred_upper <- exp(pred_log + 1.96 * pred_sd_log) - 1
+
+# -------- Evaluation --------
+# evaluates in original price scale
+actual_price <- steam_df$Price
+rmse <- sqrt(mean((actual_price - pred_mean)^2))
+cat("bayesian linear regression rmse:", round(rmse, 6), "\n")
+
+# -------- Save predictions --------
+pred_df <- data.frame(
+  actual = actual_price,
+  pred = pred_mean,
+  lower = pred_lower,
+  upper = pred_upper
+)
+
+write.csv(pred_df, "bayesian_linear_regression_vs_actual.csv", row.names = FALSE)
+
+# -------- Plot --------
+# ggplot2 used only for visualization
+p <- ggplot(pred_df, aes(x = actual, y = pred)) +
+  geom_point(alpha = 0.25, size = 1.1, color = "steelblue") +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "firebrick") +
+  labs(
+    title = "bayesian linear regression vs actual csv",
+    x = "actual price",
+    y = "predicted price"
+  ) +
+  theme_minimal()
+
+print(p)
+```
+
+## part 2: bayesian nonlinear regression (pre-built package)
+
+```{r}
+# install.packages("brms")
+library(brms)
+
+set.seed(42)
+
+# copy and sanitize names so formulas are easier to write
+steam_nonlin <- steam_df
+names(steam_nonlin) <- make.names(names(steam_nonlin))
+steam_nonlin$log_price <- log(steam_nonlin$Price + 1)
+
+# use smooth terms for nonlinear effects on key engagement variables
+nonlinear_formula <- bf(
+  log_price ~
+    s(Peak.CCU, k = 10) +
+    s(Recommendations, k = 10) +
+    s(Positive, k = 10) +
+    s(Negative, k = 10) +
+    s(Average.playtime.forever, k = 10) +
+    s(Median.playtime.forever, k = 10) +
+    Required.age + DiscountDLC.count +
+    Windows + Mac + Linux + Achievements + language_count
+)
+
+# weakly informative priors
+nonlinear_priors <- c(
+  prior(student_t(3, 0, 2.5), class = "Intercept"),
+  prior(normal(0, 1), class = "b"),
+  prior(exponential(1), class = "sigma"),
+  prior(exponential(1), class = "sds")
+)
+
+# fit bayesian nonlinear model (gaussian likelihood on log price)
+# this may take a few minutes depending on machine speed
+fit_nonlin <- brm(
+  formula = nonlinear_formula,
+  data = steam_nonlin,
+  family = gaussian(),
+  prior = nonlinear_priors,
+  chains = 4,
+  iter = 1500,
+  warmup = 500,
+  cores = getOption("mc.cores", 1),
+  seed = 42
+)
+
+print(summary(fit_nonlin))
+
+# posterior predictive mean on log scale, then back-transform
+post_epred <- posterior_epred(fit_nonlin, ndraws = 1000)
+pred_log_nonlin <- colMeans(post_epred)
+pred_nonlin <- exp(pred_log_nonlin) - 1
+
+# predictive intervals from posterior draws
+pred_log_lower <- apply(post_epred, 2, quantile, probs = 0.025)
+pred_log_upper <- apply(post_epred, 2, quantile, probs = 0.975)
+pred_lower_nonlin <- exp(pred_log_lower) - 1
+pred_upper_nonlin <- exp(pred_log_upper) - 1
+
+actual_nonlin <- steam_nonlin$Price
+rmse_nonlin <- sqrt(mean((actual_nonlin - pred_nonlin)^2))
+cat("bayesian nonlinear regression rmse:", round(rmse_nonlin, 6), "\n")
+
+pred_nonlin_df <- data.frame(
+  actual = actual_nonlin,
+  pred = pred_nonlin,
+  lower = pred_lower_nonlin,
+  upper = pred_upper_nonlin
+)
+
+write.csv(pred_nonlin_df, "bayesian_nonlinear_regression_vs_actual.csv", row.names = FALSE)
+
+# predicted vs actual plot
+p_nonlin <- ggplot(pred_nonlin_df, aes(x = actual, y = pred)) +
+  geom_point(alpha = 0.20, size = 1.0, color = "darkgreen") +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "firebrick") +
+  labs(
+    title = "bayesian nonlinear regression vs actual",
+    x = "actual price",
+    y = "predicted price"
+  ) +
+  theme_minimal()
+print(p_nonlin)
+
+# residual plot
+p_nonlin_resid <- ggplot(pred_nonlin_df, aes(x = pred, y = actual - pred)) +
+  geom_point(alpha = 0.20, size = 1.0, color = "purple") +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  labs(
+    title = "nonlinear model residuals vs predicted",
+    x = "predicted price",
+    y = "residual (actual - predicted)"
+  ) +
+  theme_minimal()
+print(p_nonlin_resid)
+```
+
+
