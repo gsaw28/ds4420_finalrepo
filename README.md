@@ -1,6 +1,11 @@
 # DS 4420 - Final Project 
 ## Predicting Steam Game Prices Using Machine Learning
-Authors: Gianna Saw, Jason Zheng 
+Authors: Gianna Saw, Jason Zheng
+
+Explaining Pivot from steam_clean_v1.csv to steam_clean_v2.csv
+
+
+
 
 ## Project Overview 
 The project is centered on the following question: to what extent can a game's content, quality, and engagement metrics be used to predict its price on the Steam marketplace? 
