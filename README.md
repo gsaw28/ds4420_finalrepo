@@ -2,6 +2,11 @@
 ## Predicting Steam Game Prices Using Machine Learning
 Authors: Gianna Saw, Jason Zheng 
 
+Main 3 code files:
+Model1_Vfinal_2.ipynb
+Model2_Vfinal.pdf
+Model2_Vfinal_cleaned2.Rmd
+
 ## Project Overview 
 The project is centered on the following question: to what extent can a game's content, quality, and engagement metrics be used to predict its price on the Steam marketplace? 
 
