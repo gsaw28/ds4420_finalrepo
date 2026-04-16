@@ -85,11 +85,37 @@ Files used for proof of concept (phase I)
 
 Final Files (Phase II): 
 - Model1_Vfinal2.ipynb -- Model 1 (MLP) code
-- Model2_Vfinal.Rmd -- Model 2 (Bayesian) R code
+- Model2_Vfinal_2cleaned.Rmd -- Model 2 (Bayesian) R code
 - Model2_Vfinal.pdf --  R code, but exported to pdf
 - Steam_clean_v2.csv -- updated dataset
 - EDA -- EDA code for research
-- 
+
+## Explaining Pivot from `steam_clean_v1.csv` to `steam_clean_v2.csv`
+**Authors: Gianna Saw, Jason Zheng**
+
+### Why we pivoted
+We moved from `steam_clean_v1.csv` to `steam_clean_v2.csv` because our first preprocessing pass was useful for a proof of concept, but it still left important data-quality and feature-representation issues that limited model reliability.
+
+In v1, we reduced the table to a compact numeric set and filtered to paid games, but:
+- list-like fields were not always parsed consistently (`Supported languages` often became `0` in practice),
+- ownership ranges were not robustly converted to numeric signal,
+- category/genre encoding was only partially integrated into the final training table,
+- sparse score fields (Metacritic/User score) did not explicitly distinguish “missing” from true zero,
+- and we ended with a smaller feature space (about **40,677 rows × 19 columns**) that was easier to train, but less expressive.
+
+### What changed in v2
+In `steam_clean_v2.csv`, we rebuilt preprocessing with stronger structure and consistency:
+- standardized the input from the newer Steam dataset format,
+- dropped non-modeling metadata fields (descriptions, URLs, media links, etc.),
+- converted `estimated_owners` range strings to numeric midpoints, then log-transformed,
+- added robust `language_count`,
+- converted platform booleans (`windows`, `mac`, `linux`) to integer flags,
+- added sparsity indicators (`has_metacritic`, `has_user_score`) so missing-score behavior is model-visible,
+- one-hot encoded genre information directly into the final modeling table,
+- log-transformed skewed engagement/playtime predictors and price,
+- filtered to paid titles for consistent paid-price modeling.
+
+This produced a richer and cleaner matrix (about **97,734 rows × 54 columns**), improving both feature coverage and downstream stability for Model 1 (MLP) and Model 2 (Bayesian tier model).
 
 
 
