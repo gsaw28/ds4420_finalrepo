@@ -5,7 +5,7 @@ Authors: Gianna Saw, Jason Zheng
 ## Project Overview 
 The project is centered on the following question: to what extent can a game's content, quality, and engagement metrics be used to predict its price on the Steam marketplace? 
 
-## Interactive Website 
+## Interactive Website for Extension Points (2)
 https://steam-dataset-9lmxpl7o3jo.streamlit.app 
 
 ## Description 
