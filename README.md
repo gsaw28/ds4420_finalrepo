@@ -8,6 +8,7 @@ The project is centered on the following question: to what extent can a game's c
 ## Interactive Website 
 https://steam-dataset-9lmxpl7o3jo.streamlit.app 
 
+## Description 
 This question lies at the intersection of digital platform economics and machine learning. Pricing decisions on large global platforms such as Steam can have significant implications for the thousands of independent developers who release games each year, as price influences both market positioning and consumer demand.
 
 ## Dataset
