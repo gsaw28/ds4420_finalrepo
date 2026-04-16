@@ -5,6 +5,9 @@ Authors: Gianna Saw, Jason Zheng
 ## Project Overview 
 The project is centered on the following question: to what extent can a game's content, quality, and engagement metrics be used to predict its price on the Steam marketplace? 
 
+## Interactive Website 
+https://steam-dataset-9lmxpl7o3jo.streamlit.app 
+
 This question lies at the intersection of digital platform economics and machine learning. Pricing decisions on large global platforms such as Steam can have significant implications for the thousands of independent developers who release games each year, as price influences both market positioning and consumer demand.
 
 ## Dataset
@@ -75,9 +78,18 @@ This allows us to see a probabilistic interpretation of how each  game feature i
 
 
 ## Repository Structure 
+Files used for proof of concept (phase I) 
 - poc_data_processing.ipynb -- preprocessing methods
-- steam_clean.csv -- cleaned dataset (40k rows) with specific features we need
 - poc_train.ipynb -- training methods for POC demonstration
+
+Final Files (Phase II): 
+- Model1_Vfinal2.ipynb -- Model 1 (MLP) code
+- Model2_Vfinal.Rmd -- Model 2 (Bayesian) R code
+- Model2_Vfinal.pdf --  R code, but exported to pdf
+- Steam_clean_v2.csv -- updated dataset
+- EDA -- EDA code for research
+- 
+
 
 
 
